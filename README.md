@@ -283,10 +283,11 @@ git status   # should list backend/, bot.py, handlers/, config.py, etc. — not 
 git commit -m "Initial: FastAPI backend + Telegram bot"
 ```
 
-Create an empty repo on GitHub (e.g. `galaticadventures-api`), then:
+Create an empty repo on GitHub (this project uses
+[`banderGlitch/telegrambackend`](https://github.com/banderGlitch/telegrambackend)), then:
 
 ```powershell
-git remote add origin https://github.com/<you>/<your-backend-repo>.git
+git remote add origin https://github.com/banderGlitch/telegrambackend.git
 git push -u origin main
 ```
 
