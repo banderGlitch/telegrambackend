@@ -1,0 +1,34 @@
+# Frontend Mini App — lives in its own Git repo (e.g. galaticadventures on GitHub).
+# Root-level `git` for this folder should not track `webapp/` so Railway/backend
+# repos stay small and separate from Vercel.
+/webapp/
+
+.env
+.env.local
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local DB / runtime artifacts
+*.sqlite
+*.sqlite3
+*.db
