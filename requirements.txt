@@ -1,6 +1,16 @@
-# Bot (local dev / optional Railway worker). Installed from repo root.
+# Monorepo root: bot + API deps in one file so `pip install -r requirements.txt`
+# works when Railway builds from repo root (no /app/backend/ path).
+# For a backend-only venv, use `pip install -r backend/requirements.txt` — keep these lists in sync.
+
+# --- Telegram bot ---
 python-telegram-bot==21.6
 
-# API stack (FastAPI, uvicorn, …). Required when Railway builds from repo root
-# without setting "Root Directory" → backend (see README §11).
--r backend/requirements.txt
+# --- FastAPI API (mirror of backend/requirements.txt) ---
+fastapi>=0.115.0,<0.116
+uvicorn[standard]>=0.32.0,<0.33
+sqlalchemy>=2.0.36,<2.1
+alembic>=1.14.0,<1.15
+psycopg2-binary>=2.9.10
+pydantic>=2.9.0,<3
+pydantic-settings>=2.6.0,<3
+python-dotenv>=1.0.1

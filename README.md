@@ -193,7 +193,7 @@ and you can hot-reload changes while testing inside Telegram.
 telegram_project/
 ├── bot.py                  # entry: logging, app builder, run_polling
 ├── config.py               # typed Settings: bot_token, log_level, webapp_url
-├── requirements.txt        # python-telegram-bot, python-dotenv
+├── requirements.txt        # bot + FastAPI deps (single file for Railway root)
 ├── .env.example            # TELEGRAM_BOT_TOKEN, LOG_LEVEL, WEBAPP_URL
 ├── handlers/
 │   ├── __init__.py         # registers every handler
@@ -339,9 +339,11 @@ Many people run `bot.py` on a home PC or a tiny VPS instead, and only host the A
 - **`uvicorn: command not found` on Railway** — the deploy image only had the
   old root deps (bot only). Fix: set **Root Directory** to `backend` and
   redeploy; **or** pull the latest `telegrambackend` repo — root
-  `requirements.txt` now includes `backend/requirements.txt`, the root
-  `Procfile` starts uvicorn from `backend/`, and start commands use
-  `python -m uvicorn`. Trigger a fresh deploy after updating.
+  `requirements.txt` lists bot and API packages in one file (no `-r`
+  path to `backend/`, which breaks when the build context has no
+  `backend/` subfolder). The root `Procfile` starts uvicorn from `backend/`,
+  and start commands use `python -m uvicorn`. Trigger a fresh deploy after updating.
+- **`No such file or directory: .../backend/requirements.txt`** during `pip install` — same cause: use the current root `requirements.txt` (merged list) or set **Root Directory** to `backend` so `pip install -r requirements.txt` uses `backend/requirements.txt` only.
 
 - **`TELEGRAM_BOT_TOKEN is not set`** — copy `.env.example` to `.env` and
   paste your token.

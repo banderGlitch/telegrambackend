@@ -1,3 +1,4 @@
+# Keep in sync with the API block in the repo root requirements.txt
 fastapi>=0.115.0,<0.116
 uvicorn[standard]>=0.32.0,<0.33
 sqlalchemy>=2.0.36,<2.1
