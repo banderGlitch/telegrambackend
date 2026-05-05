@@ -297,7 +297,11 @@ Keep using the existing `webapp/` clone for Vercel; you do not need to delete it
 
 1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub** → pick the **backend** repo.
 2. **Settings** → **Root Directory** → set to: `backend`  
-   (so Railway runs `pip install -r requirements.txt` and the `Procfile` in that folder).
+   (so Railway runs `pip install -r requirements.txt` and the `Procfile` in that folder).  
+   **Optional:** leave Root Directory empty — the repo root `requirements.txt`
+   and `Procfile` then install backend deps and run `python -m uvicorn` from
+   `backend/` (two valid setups; `backend` as root is still the cleanest).
+
 3. **Add** a **PostgreSQL** database; Railway injects `DATABASE_URL` into the service.
 4. **Variables** (on the **same** service as the API):
 
@@ -331,6 +335,13 @@ Many people run `bot.py` on a home PC or a tiny VPS instead, and only host the A
 - Rotate the bot token if it was ever committed or pasted in chat.
 
 ## 12. Troubleshooting
+
+- **`uvicorn: command not found` on Railway** — the deploy image only had the
+  old root deps (bot only). Fix: set **Root Directory** to `backend` and
+  redeploy; **or** pull the latest `telegrambackend` repo — root
+  `requirements.txt` now includes `backend/requirements.txt`, the root
+  `Procfile` starts uvicorn from `backend/`, and start commands use
+  `python -m uvicorn`. Trigger a fresh deploy after updating.
 
 - **`TELEGRAM_BOT_TOKEN is not set`** — copy `.env.example` to `.env` and
   paste your token.

@@ -1,2 +1,6 @@
+# Bot (local dev / optional Railway worker). Installed from repo root.
 python-telegram-bot==21.6
-python-dotenv==1.0.1
+
+# API stack (FastAPI, uvicorn, …). Required when Railway builds from repo root
+# without setting "Root Directory" → backend (see README §11).
+-r backend/requirements.txt
