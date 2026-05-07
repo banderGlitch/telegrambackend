@@ -360,3 +360,5 @@ Many people run `bot.py` on a home PC or a tiny VPS instead, and only host the A
 - **PowerShell can't activate the venv** — run
   `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`
   once.
+
+<!-- noop: git author test (safe to remove) -->
