@@ -3,6 +3,7 @@
 # repos stay small and separate from Vercel.
 /webapp/
 
+node_modules/
 .env
 .env.local
 .venv/

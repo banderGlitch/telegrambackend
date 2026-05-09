@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .db import Base, engine
+from .routes.admin import router as admin_router
 from .routes.leaderboard import router as leaderboard_router
 from .routes.me import router as me_router
 from .routes.runs import router as runs_router
@@ -34,6 +35,9 @@ def create_app() -> FastAPI:
     _configure_logging(settings.log_level)
     log = logging.getLogger(__name__)
 
+    # Register ORM tables on ``Base.metadata`` before ``create_all``.
+    from . import models as _models  # noqa: F401
+
     # Auto-create tables on first boot if no migrations have been run.
     # In production we run Alembic instead and this is a no-op (Base sees
     # tables already exist). For SQLite local dev this gives a zero-config
@@ -51,12 +55,20 @@ def create_app() -> FastAPI:
         ),
     )
 
+    # Regex covers dev servers on common loopback forms ( [::1] is still a
+    # different browser Origin than localhost / 127.0.0.1 ).
+    _local_origin_regex = r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\\d+)?$"
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.origins_list,
+        allow_origin_regex=_local_origin_regex,
         allow_credentials=False,  # we don't use cookies
         allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Content-Type", "X-Telegram-Init-Data"],
+        allow_headers=[
+            "Content-Type",
+            "X-Telegram-Init-Data",
+            "Authorization",
+        ],
         max_age=600,
     )
 
@@ -67,6 +79,7 @@ def create_app() -> FastAPI:
     app.include_router(me_router, prefix="/api", tags=["me"])
     app.include_router(runs_router, prefix="/api", tags=["runs"])
     app.include_router(leaderboard_router, prefix="/api", tags=["leaderboard"])
+    app.include_router(admin_router, prefix="/api")
 
     log.info(
         "App configured. require_telegram_auth=%s allowed_origins=%s",

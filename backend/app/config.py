@@ -46,6 +46,12 @@ class Settings(BaseSettings):
         default=False, alias="REQUIRE_TELEGRAM_AUTH"
     )
 
+    # Admin dashboard (/api/admin/*). JWT is signed with this secret — use a long
+    # random value in production. Login password is ADMIN_DASHBOARD_PASSWORD.
+    admin_jwt_secret: str = Field(default="", alias="ADMIN_JWT_SECRET")
+    admin_dashboard_password: str = Field(default="", alias="ADMIN_DASHBOARD_PASSWORD")
+    admin_jwt_expire_hours: int = Field(default=8, alias="ADMIN_JWT_EXPIRE_HOURS", ge=1, le=720)
+
     anticheat_min_run_ms: int = Field(
         default=2000, alias="ANTICHEAT_MIN_RUN_MS"
     )
@@ -71,6 +77,10 @@ class Settings(BaseSettings):
         if url.startswith("postgresql://") and "+psycopg" not in url:
             return "postgresql+psycopg2://" + url[len("postgresql://") :]
         return url
+
+    @property
+    def admin_enabled(self) -> bool:
+        return bool(self.admin_dashboard_password.strip() and self.admin_jwt_secret.strip())
 
 
 @lru_cache(maxsize=1)

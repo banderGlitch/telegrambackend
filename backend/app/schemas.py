@@ -102,3 +102,162 @@ class LeaderboardEntry(BaseModel):
 class LeaderboardResponse(BaseModel):
     entries: list[LeaderboardEntry]
     self_rank: int | None = Field(default=None, serialization_alias="selfRank")
+
+
+# ─────────────────────────  Admin dashboard  ─────────────────────────
+
+
+class AdminLoginRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=256)
+
+
+class AdminLoginResponse(BaseModel):
+    access_token: str = Field(serialization_alias="accessToken")
+    token_type: str = Field(default="bearer", serialization_alias="tokenType")
+    expires_in_hours: int = Field(serialization_alias="expiresInHours")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class RunsByDay(BaseModel):
+    date: str
+    count: int
+
+
+class AdminOverviewResponse(BaseModel):
+    total_users: int = Field(serialization_alias="totalUsers")
+    total_completed_runs: int = Field(serialization_alias="totalCompletedRuns")
+    open_runs: int = Field(serialization_alias="openRuns")
+    runs_last_24h: int = Field(serialization_alias="runsLast24h")
+    new_users_7d: int = Field(serialization_alias="newUsers7d")
+    dormant_users_14d: int = Field(serialization_alias="dormantUsers14d")
+    runs_by_day: list[RunsByDay] = Field(serialization_alias="runsByDay")
+
+
+class AdminInsightResponse(BaseModel):
+    title: str
+    count: int
+    sample: list[dict]
+
+
+class UserAdminPublic(BaseModel):
+    """User row suitable for operator tables."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    username: str | None
+    photo_url: str | None = Field(serialization_alias="photoUrl")
+    language: str | None
+    best_score: int = Field(serialization_alias="bestScore")
+    total_coins: int = Field(serialization_alias="totalCoins")
+    runs_played: int = Field(serialization_alias="runsPlayed")
+    created_at: datetime = Field(serialization_alias="createdAt")
+    updated_at: datetime = Field(serialization_alias="updatedAt")
+
+    @field_serializer("created_at", "updated_at")
+    def _dt(self, value: datetime) -> str:
+        return _utc_iso(value)
+
+
+class AdminUsersPage(BaseModel):
+    total: int
+    page: int
+    page_size: int = Field(serialization_alias="pageSize")
+    items: list[UserAdminPublic]
+
+
+class RunAdminPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    score: int
+    coins: int
+    duration_ms: int = Field(serialization_alias="durationMs")
+    near_misses: int = Field(serialization_alias="nearMisses")
+    started_at: datetime = Field(serialization_alias="startedAt")
+    ended_at: datetime | None = Field(default=None, serialization_alias="endedAt")
+
+    @field_serializer("started_at", "ended_at")
+    def _dt(self, value: datetime | None) -> str | None:
+        if value is None:
+            return None
+        return _utc_iso(value)
+
+
+class AdminUserDetailResponse(BaseModel):
+    user: UserAdminPublic
+    runs: list[RunAdminPublic]
+    runs_open_in_sample: int = Field(serialization_alias="runsOpenInSample")
+    runs_completed_in_sample: int = Field(serialization_alias="runsCompletedInSample")
+
+
+class AdminOutboundRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=3900)
+    parse_mode: str | None = Field(default=None, alias="parseMode")
+    user_id: int | None = Field(default=None, alias="userId")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class AdminOutboundResult(BaseModel):
+    sent: int
+    failed: int
+    errors: list[str]
+
+
+class AdminLiveSessionRow(BaseModel):
+    """Best-effort “in flight” signal: server still has ``ended_at IS NULL``.
+
+    Telegram does not ping us continuously; freshness is inferred from ``started_at``.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: int = Field(serialization_alias="userId")
+    name: str
+    username: str | None = None
+    run_id: str = Field(serialization_alias="runId")
+    started_at: datetime = Field(serialization_alias="startedAt")
+    presumed_in_game: bool = Field(
+        serialization_alias="presumedInGame",
+        description="True when started within threshold minutes (still likely playing)",
+    )
+
+    @field_serializer("started_at")
+    def _serialize_started_at(self, value: datetime) -> str:
+        return _utc_iso(value)
+
+
+class AdminLiveSessionsResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    threshold_minutes: int = Field(serialization_alias="thresholdMinutes")
+    total_returned: int = Field(serialization_alias="totalReturned")
+    caveat: str = Field(
+        default="Inferred from open run rows — not socket presence. Older rows are usually crashed clients.",
+        description="Explain limitations to dashboard operators.",
+    )
+    items: list[AdminLiveSessionRow]
+
+
+class AdminMessageLogPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime = Field(serialization_alias="createdAt")
+    scope: str
+    recipient_count: int = Field(serialization_alias="recipientCount")
+    success_count: int = Field(serialization_alias="successCount")
+    fail_count: int = Field(serialization_alias="failCount")
+    recipient_user_id: int | None = Field(serialization_alias="recipientUserId")
+    text_preview: str = Field(serialization_alias="textPreview")
+
+    @field_serializer("created_at")
+    def _dt(self, value: datetime) -> str:
+        return _utc_iso(value)
+
+
+class AdminMessageLogListResponse(BaseModel):
+    items: list[AdminMessageLogPublic]

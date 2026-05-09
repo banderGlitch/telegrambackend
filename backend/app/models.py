@@ -102,6 +102,27 @@ class Run(Base):
     user: Mapped[User] = relationship(back_populates="runs")
 
 
+class AdminMessageLog(Base):
+    """Audit trail for Telegram messages sent from the admin dashboard."""
+
+    __tablename__ = "admin_message_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, nullable=False
+    )
+    #: "single" | "broadcast" | "segment"
+    scope: Mapped[str] = mapped_column(String(16), nullable=False)
+    recipient_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    success_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    fail_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    #: Optional Telegram user id when scope == single.
+    recipient_user_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    text_preview: Mapped[str] = mapped_column(String(256), nullable=False)
+    #: JSON-encoded list of errors (telegram error strings), capped server-side.
+    errors_json: Mapped[str | None] = mapped_column(String(4096), nullable=True)
+
+
 # Composite index that powers the leaderboard query (`order by score desc`)
 # and the per-user history query (`order by ended_at desc where user_id=?`).
 Index("ix_runs_user_ended", Run.user_id, Run.ended_at.desc())
