@@ -8,16 +8,30 @@ even when a player has many runs.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from ..auth import TelegramUser, require_user
 from ..db import get_db
+from ..leaderboard_cache import set_cached_rows, try_get_cached_rows
 from ..models import User
 from ..schemas import LeaderboardEntry, LeaderboardResponse
 
 
 router = APIRouter()
+
+
+def _fetch_top_users(db: Session, limit: int) -> list[User]:
+    return (
+        db.execute(
+            select(User)
+            .where(User.best_score > 0)
+            .order_by(desc(User.best_score), User.id.asc())
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
 
 
 @router.get(
@@ -30,26 +44,23 @@ def get_leaderboard(
     db: Session = Depends(get_db),
     tg_user: TelegramUser = Depends(require_user),
 ) -> LeaderboardResponse:
-    rows = (
-        db.execute(
-            select(User)
-            .where(User.best_score > 0)
-            .order_by(desc(User.best_score), User.id.asc())
-            .limit(limit)
-        )
-        .scalars()
-        .all()
-    )
+    cached = try_get_cached_rows(limit)
+    if cached is not None:
+        flat_rows = cached
+    else:
+        rows = _fetch_top_users(db, limit)
+        flat_rows = [(u.id, u.name, u.best_score) for u in rows]
+        set_cached_rows(limit, flat_rows)
 
     entries = [
         LeaderboardEntry(
             rank=i + 1,
-            user_id=u.id,
-            name=u.name,
-            score=u.best_score,
-            is_self=(u.id == tg_user.id),
+            user_id=uid,
+            name=name,
+            score=score,
+            is_self=(uid == tg_user.id),
         )
-        for i, u in enumerate(rows)
+        for i, (uid, name, score) in enumerate(flat_rows)
     ]
 
     self_rank: int | None = None
@@ -61,8 +72,6 @@ def get_leaderboard(
     # If the player isn't in the top-N, compute their global rank explicitly
     # so the UI can still show "#412".
     if self_rank is None and tg_user.id != 0:
-        from sqlalchemy import func
-
         self_user = db.get(User, tg_user.id)
         if self_user is not None and self_user.best_score > 0:
             higher = db.scalar(

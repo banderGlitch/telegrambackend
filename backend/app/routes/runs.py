@@ -27,6 +27,7 @@ from ..schemas import (
     RunEndResponse,
     RunStartResponse,
 )
+from ..leaderboard_cache import bump_leaderboard_generation
 from ..services import upsert_user
 
 
@@ -163,6 +164,9 @@ def end_run(
 
     db.commit()
     db.refresh(user)
+
+    if new_best:
+        bump_leaderboard_generation()
 
     return RunEndResponse(
         accepted=True,

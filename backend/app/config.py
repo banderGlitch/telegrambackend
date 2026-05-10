@@ -35,6 +35,13 @@ class Settings(BaseSettings):
 
     database_url: str = Field(default="sqlite:///./dev.db", alias="DATABASE_URL")
 
+    # Optional: Railway Redis or any ``redis://`` URL. If unset, no Redis is used.
+    redis_url: str = Field(default="", alias="REDIS_URL")
+    # TTL for cached leaderboard top rows (seconds). Only used when Redis is up.
+    redis_leaderboard_ttl_seconds: int = Field(
+        default=60, alias="REDIS_LEADERBOARD_TTL_SECONDS", ge=5, le=3600
+    )
+
     allowed_origins: str = Field(
         default="http://localhost:5173,http://127.0.0.1:5173",
         alias="ALLOWED_ORIGINS",

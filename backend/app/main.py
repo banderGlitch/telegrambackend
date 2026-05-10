@@ -10,6 +10,7 @@ Run in production (Railway):
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +36,13 @@ def create_app() -> FastAPI:
     _configure_logging(settings.log_level)
     log = logging.getLogger(__name__)
 
+    @asynccontextmanager
+    async def _lifespan(app: FastAPI):
+        yield
+        from .redis_client import close_redis
+
+        close_redis()
+
     # Register ORM tables on ``Base.metadata`` before ``create_all``.
     from . import models as _models  # noqa: F401
 
@@ -53,6 +61,7 @@ def create_app() -> FastAPI:
             "Authenticates Telegram WebApp initData via HMAC, persists run "
             "history, and serves the global leaderboard."
         ),
+        lifespan=_lifespan,
     )
 
     # Regex covers dev servers on common loopback forms ( [::1] is still a
