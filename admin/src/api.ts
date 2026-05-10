@@ -11,8 +11,32 @@ import type {
 const TOKEN_KEY = "asteroid_admin_jwt";
 
 export function getApiBase(): string {
-  const raw = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").trim();
-  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
+  const fallback = "http://127.0.0.1:8000";
+  let raw = (import.meta.env.VITE_API_BASE_URL || fallback).trim();
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    raw = raw.slice(1, -1).trim();
+  }
+  while (raw.endsWith("/")) {
+    raw = raw.slice(0, -1);
+  }
+  if (!raw) {
+    return fallback;
+  }
+  if (!/^https?:\/\//i.test(raw)) {
+    raw = `https://${raw.replace(/^\/+/, "")}`;
+  }
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "http:" && u.protocol !== "https:") {
+      return fallback;
+    }
+    return u.origin;
+  } catch {
+    return fallback;
+  }
 }
 
 export function getToken(): string | null {
